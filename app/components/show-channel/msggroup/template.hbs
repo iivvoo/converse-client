@@ -1,0 +1,28 @@
+    <div class="row target-message">
+        <div class="col-md-1">
+            <img src="{{infogroup.user.avatar}}" class="img-responsive img-rounded">
+        </div>
+        <div class="col-md-11">
+            <div class="row">
+                <div class="col-md-12">
+                    <b>{{infogroup.user.name}}</b>
+                    <span class="timestamp">{{timestampFormat infogroup.when}}</span>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-12">
+                    {{firstLine.message}}
+                </div>
+            </div>
+        </div>
+    </div>
+    {{#each remainingLines as |line|}}
+    <div class="row ">
+        <div class="col-md-1">
+            <span class="timestamp">{{timestampFormat line.when}}</span>
+        </div>
+        <div class="col-md-11">
+            {{line.message}}
+        </div>
+    </div>
+    {{/each}}

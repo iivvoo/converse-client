@@ -1,0 +1,9 @@
+{{#if (eq infogroup.type "MSG")}}
+    {{show-channel/msggroup infogroup=infogroup channel=channel}}
+{{/if}}
+{{#if (eq infogroup.type "JOINPART")}}
+    {{show-channel/joinpartgroup infogroup=infogroup channel=channel}}
+{{/if}}
+{{#if (eq infogroup.type "NICKCHANGE")}}
+    {{show-channel/nickgroup infogroup=infogroup channel=channel}}
+{{/if}}

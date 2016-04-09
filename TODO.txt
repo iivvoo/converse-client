@@ -1,0 +1,56 @@
+## algemeen
+
+- restrict userlisting to max height
+- restrict (initial) join line
+- restrict scrollback
+
+- models apart
+- replace list/object xxx_map pattern
+- toggle userlist on side show/hide
+- add user detail section
+- track/display nick changes
+
+- styling
+
+## structuur / protocol
+
+Server backend regelt abstractie van verschillende systemen. Eerste focus ligt
+bij IRC
+
+Channels en queries zitten in 'groups'. Een groep is effectief een netwerk
+connectie of protocol. E.g. twitter, slack, irc server 1, irc server 2.
+
+## groeperen messages
+
+De meeste irc clients geven events individueel. Dit maakt code paste,
+mass joins, etc, lelijk/moeilijk leesbaar.
+
+Events kunnen beter gegroepeerd worden. Nu (tijdelijk) gebeurt dit
+bij ontvangst van de message maar mogelijk kan het beter tijdens display
+gebeuren. Dat maakt het mogelijk combinaties van leave/join te groeperen
+of individueel te tonen.
+
+Dit maakt het (mogelijk) praktischer om extra regels in te voegen zoals
+"--- today ----"
+
+
+# Algemeen
+
+Users worden geabstraheerd. Users hebben altijd een unieke identifier. Nickname
+kan veranderen maar identificatie blijft hetzelfde. Op IRC is het niet altijd
+uniek mogelijk een user te tracken.
+
+Aan de client kant geldt dat een gebruikt een kanaal verlaten kan hebben maar
+z'n "oude" data blijft actueel. Wat is dan handig: dat de server per "event"
+alle relevante informatie stuurt? Want achteraf opvragen (of cached channel data
+opvragen) is niet altijd mogelijk.
+
+Hou de client dus relatief dom, laat client niet teveel data manipuleren. En in
+tegenstelling tot andere toepassingen: als specifieke data wijzigt dan moeten niet
+alle bestaande instances geupdate worden. Als een nickname wijzigt dan moeten oude
+instances blijven staan.
+
+# Design
+
+Messages komen via één websock binnen (of moet er een channel per kanaal komen?
+Dit zou een service kunnen zijn. Deze service biedt o.a. channels

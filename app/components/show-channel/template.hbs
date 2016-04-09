@@ -1,0 +1,49 @@
+<div class="row target-top">
+    <div class="col-md-10"><h3>Channel {{channel.name}}</h3></div>
+    <div class="col-md-2">
+        <form>
+            <div class="input-group">
+                <input class="form-control" type="text">
+                <div class="input-group-btn">
+                    <button class="btn btn-default" type="button">Go!</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+<div class="row target-interaction">
+    <div class="col-md-10 target-messages-input">
+        <div class="row target-messages">
+            <div class="col-md-12">
+                {{#each infogroups as |infogroup|}}
+                  {{show-channel/infogroup infogroup=infogroup channel=channel}}
+                {{/each}}
+            </div>
+        </div>
+        <div class="row target-input">
+            <div class="col-md-12">
+                <form onsubmit={{action (action handle_input) }}>
+                    <div class="input-group">
+                        <div class="input-group-addon"><span>Addon</span></div>
+                        {{input type="text" class="form-control" value=input_line}}
+                        <div class="input-group-btn">
+                            <button class="btn btn-default" type="button">Go!</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2 target-details">
+        <div class="row user-entries">
+            {{#each users as |user|}}
+                <div class="col-md-12 user-entry">{{user.name}}</div>
+            {{/each}}
+        </div>
+        <div class="row user-inforow">
+            <div class="col-md-12 user-info">
+                <b>User info</b>
+            </div>
+        </div>
+    </div>
+</div>
