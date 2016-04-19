@@ -10,14 +10,20 @@ export default Ember.Controller.extend({
 
     init() {
         this.get('converseConnector');
+        if(this.get("converseConnector.firstChannelLoaded")) {
+            this.redirectToFirstChannel()
+        }
     },
 
+    redirectToFirstChannel() {
+        let gid = this.get('converseConnector.groups.firstObject');
+        let cid = this.get(`converseConnector.groups_map.${gid}.channels.firstObject`)
+
+        this.transitionToRoute('group.channel', gid, cid);
+
+    },
     redirectOnLoaded: Ember.observer('converseConnector.firstChannelLoaded',
         function() {
-            // debugger;
-            let gid = this.get('converseConnector.groups.firstObject');
-            let cid = this.get(`converseConnector.groups_map.${gid}.channels.firstObject`)
-
-            this.transitionToRoute('group.channel', gid, cid);
+            this.redirectToFirstChannel();
     })
 });

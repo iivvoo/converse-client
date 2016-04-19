@@ -3,6 +3,7 @@ import { storageFor } from 'ember-local-storage';
 
 export default Ember.Route.extend({
     auth: storageFor('auth'),
+    converseConnector: Ember.inject.service('converse-connector'),
 
     model() {
         console.log("protected model", this.get('auth'));
@@ -21,5 +22,9 @@ export default Ember.Route.extend({
         if(model === null) {
             this.transitionTo('login');
         }
+        if(!this.get("converseConnector.authenticated")) {
+            this.transitionTo('login');
+        }
+
     }
 });

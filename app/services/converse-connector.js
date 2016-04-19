@@ -1,4 +1,5 @@
 import Ember from 'ember';
+import { storageFor } from 'ember-local-storage';
 
 /*
  * It's not about events, it's about activities. You want them grouped.
@@ -109,6 +110,7 @@ var Channel = Ember.Object.extend({
 
 export default Ember.Service.extend({
     socketService: Ember.inject.service('websockets'),
+    auth: storageFor('auth'),
     socket: null,
 
     init() {
@@ -133,12 +135,21 @@ export default Ember.Service.extend({
         this.set('groups', Ember.A());
         this.set('groups_map', Ember.Object.create());
         this.set('firstChannelLoaded', false);
+        this.set('authenticated', false);
+        this.set('logintries', 0);
+    },
+
+    login() {
+        console.log("Login", this.get('auth.username'), this.get('auth.password'));
+        let username = this.get("auth.username");
+        let password = this.get("auth.password");
+        this.get('socket').send(`${username} ${password}\n`);
+        this.set("logintries", this.get("logintries") + 1);
     },
 
     myOpenHandler: function(event) {
         console.log('On open event has been called: ' + event);
-        console.log(this);
-        this.get('socket').send('ivo\n');
+        this.login();
     },
 
     myMessageHandler: function(data) {
@@ -146,6 +157,18 @@ export default Ember.Service.extend({
          * this.channels = contains the keys, for iteration
          * this.channels_map = contains channel instances, indexed by channel id
          */
+        if(data.data.startsWith("CONVERSE ")) {
+            console.log("Handling converse response ", data.data);
+            if(data.data.startsWith("CONVERSE AUTH 1001")) {
+                console.log("Login successfull");
+                this.set("authenticated", true);
+            }
+            if(data.data.startsWith("CONVERSE AUTH 1002")) {
+                console.log("Login failed");
+                this.set("authenticated", false);
+            }
+            return;
+        }
         let event = Ember.$.parseJSON(data.data);
 
         console.log("handling event", event);
