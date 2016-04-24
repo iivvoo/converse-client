@@ -37,7 +37,7 @@ var NickChangeInfoGroup = ConverseInfoGroup.extend({
     },
 
     canHandle: function(event, user) {
-        if(event.type === 'NICKCHANGE' && this.get("user.id") === event.userid) {
+        if(event.type === 'NICKCHANGE' && this.get("user.id") === event.user.id) {
             this.addRow(event, user);
             return true;
         }
@@ -117,7 +117,7 @@ var MSGInfoGroup = ConverseInfoGroup.extend({
     },
 
     canHandle: function(event, user) {
-        if(event.type === 'CHANNEL_MESSAGE' && this.get("user.id") === event.userid) {
+        if(event.type === 'CHANNEL_MESSAGE' && this.get("user.id") === event.user.id) {
             this.addRow(event);
             return true;
         }
@@ -161,7 +161,7 @@ export default Ember.Component.extend({
          */
         for(let e of this.get("channel.events").slice(-200)) {
             let last = r.get("lastObject");
-            let user = this.get('channel').getUser(e.userid);
+            let user = e.user;
             if(last && last.canHandle(e, user)) {
                 continue;
             }

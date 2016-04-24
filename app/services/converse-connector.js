@@ -15,11 +15,14 @@ import { storageFor } from 'ember-local-storage';
 
 var Group = Ember.Object.extend({
     name: '',
+    firstChannelLoaded: false,
 
     init() {
         console.log("Group init", this.name);
         this.set('channels_map', Ember.Object.create());
         this.set('channels', Ember.A());
+        this.set('users_map', Ember.Object.create());
+        this.set('users', Ember.A());
     },
 
     ordered_channels: function() {
@@ -30,21 +33,63 @@ var Group = Ember.Object.extend({
         }
         return r;
 
-    }.property("channels.[]")
-});
+    }.property("channels.[]"),
 
-var User = Ember.Object.extend({
+    handleEvent(event) {
+        console.log(event);
+        let eventtype = event.type;
+        let channel = event.channel;
+        let channelid = event.channelid;
+        let when = new Date(event.when);
 
-});
+        let channels = this.get("channels");
+        let channels_map = this.get('channels_map');
+        let users = this.get("users");
 
-var Channel = Ember.Object.extend({
-    name: '',
 
-    init() {
-        console.log(`channel ${this.name} init`);
-        this.set('users', Ember.A());
-        this.set('users_map', Ember.Object.create());
-        this.set('events', Ember.A());
+        if(eventtype === "CREATE_CHANNEL") {
+            // channel is an object {id, name}
+            if(!channels.contains(channel.id)) {
+                channels.pushObject(channel.id);
+                let newchannel = Channel.create({id: channel.id, name: channel.name});
+                channels_map.set(channel.id.toString(), newchannel);
+                console.log(`Channel entry created for ${channel.id}/${channel.name}`);
+                this.set('firstChannelLoaded', true);
+            }
+        }
+        else if(eventtype === 'USERJOIN') {
+            let chan = channels_map.get(channelid.toString());
+            let user = this.addUser(event.user);
+            chan.userJoin(user, when);
+        }
+        else if(eventtype === 'USERPART') {
+            let chan = channels_map.get(channelid.toString());
+            let user = this.getUser(event.userid);
+            chan.userJoin(user, when);
+        }
+        else if(eventtype === "NICKCHANGE") {
+            let chan = channels_map.get(channelid.toString());
+            let user = this.getUser(event.userid);
+            let oldnick = user.name;
+            chan.userNickChange(user, oldnick, when);
+
+            user.set('name', event.nickname);
+        }
+        else if(eventtype === "CHANNEL_MESSAGE") {
+            let chan = channels_map.get(channelid.toString());
+            let user = this.getUser(event.userid);
+            chan.channelMessage(user, event.message, when);
+
+        }
+        else if(eventtype === "STARTQUERY") {
+            let user = this.addUser(event.user);
+        }
+        else if(eventtype === "QUERY_MESSAGE") {
+            let user = this.getUser(event.userid);
+        }
+        else {
+            console.error("Couldn't handle event", event);
+        }
     },
 
     getUser(userid) {
@@ -60,51 +105,83 @@ var Channel = Ember.Object.extend({
 
     addUser(user) {
         console.log("addUser", user);
-        let u = User.create(user);
-        if(this.get(`users_map.${user.id}`) === undefined) {
+        let u = this.get(`users_map.${user.id}`)
+        if(u === undefined) {
+            let u = User.create(user);
             this.get("users").pushObject(user.id);
             this.get("users_map").set(user.id.toString(), u);
         }
         return user;
     },
+});
 
-    addEvent(event) {
-        let eventtype = event.type;
+var User = Ember.Object.extend({
+    query: false
+});
+
+var Channel = Ember.Object.extend({
+    name: '',
+
+    init(group) {
+        console.log(`channel ${this.name} init`);
+        this.set('users', Ember.A());
+        this.set('users_map', Ember.Object.create());
+        this.set('events', Ember.A());
+        this.set('group', group);
+    },
+    addUser(user) {
+        let u = this.get(`users_map.${user.id}`)
+        let users = this.get("users");
+        let users_map = this.get("users_map");
+        if(!users.contains(user.id)) {
+            users.pushObject(user.id);
+            users_map.set(user.id.toString(), user);
+        }
+    },
+    removeUser(user) {
+        let users = this.get("users");
+        users.removeObject(user.id);
+        delete this.get("users_map.${user.id}");
+    },
+    getUser(userid) {
+        return this.get(`users_map.${userid}`);
+    },
+
+    userJoin(user, when) {
         let row = {};
-        row.when = new Date(event.when);
-
-        if(eventtype === 'USERJOIN') {
-            let user = this.addUser(event.user);
-            row.type = "USERJOIN";
-            row.userid  = event.user.id;
-        }
-        if(eventtype === 'USERPART') {
-            this.removeUser(event.userid);
-            row.type = "USERPART";
-            row.userid = event.userid;
-        }
-        if(eventtype === "CHANNEL_MESSAGE") {
-            row.type = "CHANNEL_MESSAGE";
-            row.userid = event.userid;
-            row.message = event.message;
-            row.when = event.when;
-        }
-        if(eventtype === "NICKCHANGE") {
-            console.log(event);
-            let user = this.getUser(event.userid);
-            if(user) {
-                console.log(user);
-                let oldnick = user.name;
-                // user os a plain old object, no observable
-                user.set('name', event.nickname);
-                row.type = "NICKCHANGE";
-                row.userid = event.userid;
-                row.oldnick = oldnick;
-                row.newnick = event.nickname;
-            }
-
-        }
+        row.when = when;
+        row.type = "USERJOIN";
+        row.user = user;
+        this.addUser(user);
         this.get("events").pushObject(row);
+    },
+    userPart(user, when) {
+        let row = {};
+        row.when = when;
+        row.type = "USERPART";
+        row.user = user;
+        this.removeUser(user);
+        this.get("events").pushObject(row);
+    },
+    userNickChange(user, oldnick, when) {
+        let row = {};
+        row.when = when;
+
+        row.type = "NICKCHANGE";
+        row.user = user;
+        row.oldnick = oldnick;
+        row.newnick = user.name;
+        this.get("events").pushObject(row);
+    },
+    channelMessage(user, message, when) {
+        let row = {};
+
+        row.type = "CHANNEL_MESSAGE";
+        row.user = user;
+        row.message = message;
+        row.when = when;
+        this.get("events").pushObject(row);
+
     }
 });
 
@@ -134,7 +211,6 @@ export default Ember.Service.extend({
 
         this.set('groups', Ember.A());
         this.set('groups_map', Ember.Object.create());
-        this.set('firstChannelLoaded', false);
         this.set('authenticated', false);
         this.set('logintries', 0);
     },
@@ -172,16 +248,13 @@ export default Ember.Service.extend({
         let event = Ember.$.parseJSON(data.data);
 
         console.log("handling event", event);
-        let eventtype = event.type;
-        let channel = event.channel;
-        let channelid = event.channelid;
 
         let groups = this.get('groups');
         let groups_map = this.get('groups_map');
 
         let group;
 
-        if(eventtype === "CREATE_GROUP") {
+        if(event.type === "CREATE_GROUP") {
             let g = event.group;
             if(!groups.contains(g.id)) {
                 console.log(`Adding group ${g.id}`);
@@ -195,26 +268,8 @@ export default Ember.Service.extend({
             group = groups_map.get(event.groupid.toString());
         }
 
-        console.log("Group context", group);
-        let channels = group.get("channels");
-        let channels_map = group.get('channels_map');
+        group.handleEvent(event);
 
-        if(eventtype === "CREATE_CHANNEL") {
-            // channel is an object {id, name}
-            if(!channels.contains(channel.id)) {
-                channels.pushObject(channel.id);
-                let newchannel = Channel.create({id: channel.id, name: channel.name});
-                channels_map.set(channel.id.toString(), newchannel);
-                console.log(`Channel entry created for ${channel.id}/${channel.name}`);
-                this.set('firstChannelLoaded', true);
-            }
-        }
-        else {
-            // channel is just an integer id
-            let chan = channels_map.get(channelid.toString());
-            chan.addEvent(event);
-
-        }
     },
     inputHandler(groupid, channel, line) {
         let msg = null;

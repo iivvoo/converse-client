@@ -10,7 +10,7 @@ export default Ember.Controller.extend({
 
     init() {
         this.get('converseConnector');
-        if(this.get("converseConnector.firstChannelLoaded")) {
+        if(this.get("converseConnector.@channels.firstChannelLoaded")) {
             this.redirectToFirstChannel()
         }
     },
@@ -22,7 +22,7 @@ export default Ember.Controller.extend({
         this.transitionToRoute('group.channel', gid, cid);
 
     },
-    redirectOnLoaded: Ember.observer('converseConnector.firstChannelLoaded',
+    redirectOnLoaded: Ember.observer('converseConnector.@channels.firstChannelLoaded',
         function() {
             this.redirectToFirstChannel();
     })
