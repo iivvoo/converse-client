@@ -188,7 +188,7 @@ export default Ember.Component.extend({
 
         // debugger;
         for(let c of this.get("channel.users")) {
-            r.pushObject(this.get(`channel.users_map.${c}`));
+            r.pushObject(this.get("channel").getUser(c));
         }
         return r;
     }.property("channel.users.[]"),

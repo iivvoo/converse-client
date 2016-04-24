@@ -12,6 +12,10 @@ import { storageFor } from 'ember-local-storage';
  * Possibly when too many stuff happens, "Lot's of people joined/left"
  * ( and allow it to expand)
  */
+let User = Ember.Object.extend({
+    query: false
+});
+
 
 var Group = Ember.Object.extend({
     name: '',
@@ -51,7 +55,7 @@ var Group = Ember.Object.extend({
             // channel is an object {id, name}
             if(!channels.contains(channel.id)) {
                 channels.pushObject(channel.id);
-                let newchannel = Channel.create({id: channel.id, name: channel.name});
+                let newchannel = Channel.create({group: this, id: channel.id, name: channel.name});
                 channels_map.set(channel.id.toString(), newchannel);
                 console.log(`Channel entry created for ${channel.id}/${channel.name}`);
                 this.set('firstChannelLoaded', true);
@@ -72,7 +76,6 @@ var Group = Ember.Object.extend({
             let user = this.getUser(event.userid);
             let oldnick = user.name;
             chan.userNickChange(user, oldnick, when);
-
             user.set('name', event.nickname);
         }
         else if(eventtype === "CHANNEL_MESSAGE") {
@@ -105,46 +108,40 @@ var Group = Ember.Object.extend({
 
     addUser(user) {
         console.log("addUser", user);
-        let u = this.get(`users_map.${user.id}`)
+        var u = this.getUser(user.id);
         if(u === undefined) {
-            let u = User.create(user);
+            u = User.create(user);
             this.get("users").pushObject(user.id);
-            this.get("users_map").set(user.id.toString(), u);
+            this.set(`users_map.${user.id}`, u);
         }
-        return user;
+        return u;
     },
-});
-
-var User = Ember.Object.extend({
-    query: false
 });
 
 var Channel = Ember.Object.extend({
     name: '',
+    group: '',
 
-    init(group) {
-        console.log(`channel ${this.name} init`);
+    init() {
         this.set('users', Ember.A());
-        this.set('users_map', Ember.Object.create());
         this.set('events', Ember.A());
-        this.set('group', group);
     },
+
+    users_map: Ember.computed.alias('group.users_map'),
+
     addUser(user) {
         let u = this.get(`users_map.${user.id}`)
         let users = this.get("users");
-        let users_map = this.get("users_map");
         if(!users.contains(user.id)) {
             users.pushObject(user.id);
-            users_map.set(user.id.toString(), user);
         }
     },
     removeUser(user) {
         let users = this.get("users");
         users.removeObject(user.id);
-        delete this.get("users_map.${user.id}");
     },
     getUser(userid) {
-        return this.get(`users_map.${userid}`);
+        return this.get(`group.users_map.${userid}`);
     },
 
     userJoin(user, when) {
