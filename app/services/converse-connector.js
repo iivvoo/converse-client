@@ -52,12 +52,10 @@ var Group = Ember.Object.extend({
 
 
         if(eventtype === "CREATE_CHANNEL") {
-            // channel is an object {id, name}
             if(!channels.contains(channel.id)) {
                 channels.pushObject(channel.id);
                 let newchannel = Channel.create({group: this, id: channel.id, name: channel.name});
                 channels_map.set(channel.id.toString(), newchannel);
-                console.log(`Channel entry created for ${channel.id}/${channel.name}`);
                 this.set('firstChannelLoaded', true);
             }
         }
